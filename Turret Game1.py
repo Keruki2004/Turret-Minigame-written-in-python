@@ -22,7 +22,7 @@ ENEMY_RADIUS = 15
 ENEMY_SPEED = 2
 FAST_ENEMY_SPEED = 4
 BULLET_SPEED = 8
-ENEMY_SPAWN_RATE = 250
+INITIAL_ENEMY_SPAWN_RATE = 900  # Modified for level system
 MAX_ENEMIES = 100
 SCORE_INCREMENT = 10
 FAST_ENEMY_SCORE = 25
@@ -40,6 +40,11 @@ COMBO_RESET_TIME = 1.2
 HIGHSCORE_FILE = "highscore.txt"
 
 TURRET_MOVE_SPEED = 6  # px per frame
+
+LEVEL_UP_SCORE = 150      # Points needed to next level
+ENEMY_SPAWN_ACCEL = 80    # How much faster enemies spawn each level (ms)
+ENEMY_MIN_SPAWN_RATE = 300 # Minimum allowed enemy spawn interval (ms)
+MAX_LEVEL = 20
 
 def distance(x1, y1, x2, y2):
     return math.hypot(x2 - x1, y2 - y1)
@@ -85,15 +90,21 @@ class Bullet:
                                 2 * BULLET_RADIUS, 2 * BULLET_RADIUS)
 
 class Enemy:
-    def __init__(self):
+    def __init__(self, level=1):
+        # Increase enemy speed with level (capped a bit)
+        speed_boost = min(level-1, 10)  # up to +10 speed
         self.type = random.choices(['normal','fast'], weights=[0.7,0.3])[0]
         side = random.choice(['left', 'right'])
+        if self.type == 'normal':
+            base_speed = ENEMY_SPEED + 0.25 * speed_boost
+        else:
+            base_speed = FAST_ENEMY_SPEED + 0.25 * speed_boost
         if side == 'left':
             self.x = -ENEMY_RADIUS
-            self.speed_x = ENEMY_SPEED if self.type=='normal' else FAST_ENEMY_SPEED
+            self.speed_x = base_speed
         else:
             self.x = SCREEN_WIDTH + ENEMY_RADIUS
-            self.speed_x = -ENEMY_SPEED if self.type=='normal' else -FAST_ENEMY_SPEED
+            self.speed_x = -base_speed
         self.y = random.randint(ENEMY_RADIUS, SCREEN_HEIGHT - ENEMY_RADIUS)
         self.speed_y = 0
         self.active = True
@@ -176,6 +187,8 @@ class GameWidget(QWidget):
     gameOverSignal = pyqtSignal()
     highScoreChanged = pyqtSignal(int)
     comboChanged = pyqtSignal(int)
+    levelChanged = pyqtSignal(int)
+    levelUpSignal = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -205,16 +218,20 @@ class GameWidget(QWidget):
         self.combo_timer = 0
         self.hud_message = ""
         self.hud_message_timer = 0
+        self.level = 1
+        self.level_target_score = LEVEL_UP_SCORE
+        self.enemy_spawn_rate = INITIAL_ENEMY_SPAWN_RATE
         self.highScoreChanged.emit(self.highscore)
         self.scoreChanged.emit(self.score)
         self.healthChanged.emit(self.health)
         self.comboChanged.emit(self.combo_count)
+        self.levelChanged.emit(self.level)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_game)
         self.timer.start(16)
         self.enemy_spawn_timer = QTimer(self)
         self.enemy_spawn_timer.timeout.connect(self.spawn_enemy)
-        self.enemy_spawn_timer.start(ENEMY_SPAWN_RATE)
+        self.enemy_spawn_timer.start(self.enemy_spawn_rate)
         self.powerup_timer = QTimer(self)
         self.powerup_timer.timeout.connect(self.spawn_powerup)
         self.powerup_timer.start(POWERUP_SPAWN_RATE)
@@ -282,7 +299,7 @@ class GameWidget(QWidget):
 
     def spawn_enemy(self):
         if len(self.enemies) < MAX_ENEMIES and not self.game_over and not self.pause:
-            self.enemies.append(Enemy())
+            self.enemies.append(Enemy(level=self.level))
 
     def spawn_powerup(self):
         if not self.game_over and not self.pause:
@@ -304,6 +321,18 @@ class GameWidget(QWidget):
         self.hud_message = text
         self.hud_message_color = color
         self.hud_message_timer = duration
+
+    def check_level_up(self):
+        # Level up if score passes threshold, up to MAX_LEVEL
+        if self.level < MAX_LEVEL and self.score >= self.level * LEVEL_UP_SCORE:
+            self.level += 1
+            self.levelChanged.emit(self.level)
+            self.levelUpSignal.emit(self.level)
+            self.show_hud_message(f"Level {self.level}!", QColor(0,255,255), 80)
+            # Increase difficulty: decrease enemy spawn timer
+            self.enemy_spawn_rate = max(INITIAL_ENEMY_SPAWN_RATE - ENEMY_SPAWN_ACCEL * (self.level-1), ENEMY_MIN_SPAWN_RATE)
+            self.enemy_spawn_timer.stop()
+            self.enemy_spawn_timer.start(self.enemy_spawn_rate)
 
     def update_game(self):
         if self.game_over or self.pause:
@@ -374,6 +403,7 @@ class GameWidget(QWidget):
         self.bullets = [bullet for bullet in self.bullets if bullet.active]
         self.enemies = [enemy for enemy in self.enemies if enemy.active]
         self.powerups = [p for p in self.powerups if p.active]
+        self.check_level_up()
         self.update()
 
     def paintEvent(self, event):
@@ -389,6 +419,10 @@ class GameWidget(QWidget):
         for powerup in self.powerups:
             powerup.draw(painter)
         self.draw_health_bar(painter)
+        # Draw Level in HUD
+        painter.setPen(QColor(0,255,255))
+        painter.setFont(QFont("Arial",18,QFont.Bold))
+        painter.drawText(10, 48, f"Level: {self.level}")
         if self.combo_count > 1:
             painter.setPen(QColor(255,255,0))
             painter.setFont(QFont("Arial",18,QFont.Bold))
@@ -428,6 +462,9 @@ class GameWidget(QWidget):
         painter.drawText(self.rect(), Qt.AlignBottom | Qt.AlignCenter, score_text)
         hs_text = f"High Score: {self.highscore}"
         painter.drawText(self.rect().adjusted(0,-50,0,-20), Qt.AlignBottom | Qt.AlignCenter, hs_text)
+        # Show Level reached
+        painter.setFont(QFont("Arial", 20, QFont.Bold))
+        painter.drawText(self.rect().adjusted(0,-100,0,-60), Qt.AlignBottom | Qt.AlignCenter, f"Level Reached: {self.level}")
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -441,16 +478,19 @@ class MainWindow(QWidget):
         self.health_label = QLabel(f"Health: {STARTING_HEALTH}/{MAX_HEALTH}")
         self.highscore_label = QLabel(f"High Score: {self.game_widget.highscore}")
         self.combo_label = QLabel("")
+        self.level_label = QLabel("Level: 1")
         font = QFont()
         font.setPointSize(14)
         self.score_label.setFont(font)
         self.health_label.setFont(font)
         self.highscore_label.setFont(font)
         self.combo_label.setFont(font)
+        self.level_label.setFont(font)
         controls_layout = QVBoxLayout()
         controls_layout.addWidget(self.score_label)
         controls_layout.addWidget(self.health_label)
         controls_layout.addWidget(self.highscore_label)
+        controls_layout.addWidget(self.level_label)
         controls_layout.addWidget(self.combo_label)
         controls_layout.addStretch(1)
         self.reset_button = QPushButton("Reset")
@@ -466,6 +506,8 @@ class MainWindow(QWidget):
         self.game_widget.gameOverSignal.connect(self.on_game_over)
         self.game_widget.highScoreChanged.connect(self.update_highscore_label)
         self.game_widget.comboChanged.connect(self.update_combo_label)
+        self.game_widget.levelChanged.connect(self.update_level_label)
+        self.game_widget.levelUpSignal.connect(self.on_level_up)
 
     def update_score_label(self, score):
         self.score_label.setText(f"Score: {score}")
@@ -482,6 +524,13 @@ class MainWindow(QWidget):
         else:
             self.combo_label.setText("")
 
+    def update_level_label(self, level):
+        self.level_label.setText(f"Level: {level}")
+
+    def on_level_up(self, level):
+        # Optional: Play sound or animation
+        pass
+
     def on_game_over(self):
         self.reset_button.setEnabled(True)
         QMessageBox.information(self, "Game Over", "Game Over! Click Reset to play again.")
@@ -497,6 +546,8 @@ class MainWindow(QWidget):
         self.game_widget.gameOverSignal.connect(self.on_game_over)
         self.game_widget.highScoreChanged.connect(self.update_highscore_label)
         self.game_widget.comboChanged.connect(self.update_combo_label)
+        self.game_widget.levelChanged.connect(self.update_level_label)
+        self.game_widget.levelUpSignal.connect(self.on_level_up)
         self.layout().replaceWidget(self.layout().itemAt(0).widget(), self.game_widget)
         self.reset_button.setEnabled(False)
         self.update()
