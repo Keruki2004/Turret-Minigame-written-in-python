@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 18 12:20:50 2025
 
-@author: tux
+
+@author: Keruki2004
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 18 12:16:33 2025
-@author: tux
-"""
+
 import sys
 import random
 import math
