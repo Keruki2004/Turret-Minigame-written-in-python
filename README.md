@@ -12,9 +12,9 @@ It's just written from scratch, so don't expect high-end performance and hours o
 
 # Changelog September 2025:
 
-  -first release
-  -added "Power-up"s
-  -added free movement 
-  -added level-system
-  -added combo-system
+|  -first release
+| -added "Power-up"s
+|-added free movement 
+|  -added level-system
+| -added combo-system
   
