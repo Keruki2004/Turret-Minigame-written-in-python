@@ -13,7 +13,7 @@ Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 |
 
 
-# Changelog September 2025:
+# Changelog October 2025:
 
 |  -first release 
 | -added "Power-up"s 
