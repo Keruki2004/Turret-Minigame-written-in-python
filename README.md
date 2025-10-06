@@ -8,6 +8,7 @@ It's just written from scratch, so don't expect high-end performance and hours o
 |  -added red dots
 |  -added bulllets
 | -added turret and shooting method
+|
 
 
 # Changelog September 2025:
@@ -17,4 +18,5 @@ It's just written from scratch, so don't expect high-end performance and hours o
 |-added free movement 
 |  -added level-system 
 | -added combo-system 
+|
   
