@@ -3,6 +3,8 @@ Hi, this is a little "Turret Minigame" written in python where you shoot small m
 It's just written from scratch, so don't expect high-end performance and hours of exciting gameplay. 
 (But I want to steadily develop it.)
 
+Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
+
 # Changelog September 2025:
 |  -first build 
 |  -added red dots
