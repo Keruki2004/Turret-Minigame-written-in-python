@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Thu Oct  9 11:00:16 2025
+
+@author: tux
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 @author: Keruki2004
 """
 
@@ -8,7 +16,10 @@ import sys
 import random
 import math
 import os
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
+    QMenuBar, QMenu, QAction, QMainWindow
+)
 from PyQt5.QtGui import QPainter, QBrush, QPen, QColor, QFont
 from PyQt5.QtCore import Qt, QTimer, QRectF, pyqtSignal, QRect
 
@@ -466,11 +477,14 @@ class GameWidget(QWidget):
         painter.setFont(QFont("Arial", 20, QFont.Bold))
         painter.drawText(self.rect().adjusted(0,-100,0,-60), Qt.AlignBottom | Qt.AlignCenter, f"Level Reached: {self.level}")
 
-class MainWindow(QWidget):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Turret Defense")
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
         self.init_ui()
+        self.init_menubar()
 
     def init_ui(self):
         self.game_widget = GameWidget()
@@ -500,7 +514,7 @@ class MainWindow(QWidget):
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.game_widget)
         main_layout.addLayout(controls_layout)
-        self.setLayout(main_layout)
+        self.central_widget.setLayout(main_layout)
         self.game_widget.scoreChanged.connect(self.update_score_label)
         self.game_widget.healthChanged.connect(self.update_health_label)
         self.game_widget.gameOverSignal.connect(self.on_game_over)
@@ -508,6 +522,35 @@ class MainWindow(QWidget):
         self.game_widget.comboChanged.connect(self.update_combo_label)
         self.game_widget.levelChanged.connect(self.update_level_label)
         self.game_widget.levelUpSignal.connect(self.on_level_up)
+
+    def init_menubar(self):
+        menubar = self.menuBar()
+        game_menu = menubar.addMenu("Game")
+        help_menu = menubar.addMenu("Help")
+        
+        reset_action = QAction("Reset Game", self)
+        reset_action.triggered.connect(self.reset_game)
+        game_menu.addAction(reset_action)
+        
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.close)
+        game_menu.addAction(exit_action)
+
+        about_action = QAction("About", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+
+        controls_action = QAction("Controls", self)
+        controls_action.triggered.connect(self.show_controls_dialog)
+        help_menu.addAction(controls_action)
+
+    def show_about_dialog(self):
+        QMessageBox.information(self, "About Turret Defense",
+            "Turret Defense Minigame\n\nCreated by Keruki2004\n\nShoot incoming enemies, collect powerups, and survive as long as you can!\n\nPython & PyQt5.")
+
+    def show_controls_dialog(self):
+        QMessageBox.information(self, "Controls",
+            "Mouse: Aim\nLeft Click: Fire\nArrow Keys: Move Turret\nSpace: Fire (hold for rapid-fire)\nP: Pause/Resume\nReset Button/Menu: Restart Game")
 
     def update_score_label(self, score):
         self.score_label.setText(f"Score: {score}")
@@ -548,7 +591,9 @@ class MainWindow(QWidget):
         self.game_widget.comboChanged.connect(self.update_combo_label)
         self.game_widget.levelChanged.connect(self.update_level_label)
         self.game_widget.levelUpSignal.connect(self.on_level_up)
-        self.layout().replaceWidget(self.layout().itemAt(0).widget(), self.game_widget)
+        # Replace the old widget in the layout
+        central_layout = self.central_widget.layout()
+        central_layout.replaceWidget(central_layout.itemAt(0).widget(), self.game_widget)
         self.reset_button.setEnabled(False)
         self.update()
 
