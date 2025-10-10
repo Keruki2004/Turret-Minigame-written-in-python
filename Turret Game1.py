@@ -18,7 +18,7 @@ import math
 import os
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
-    QMenuBar, QMenu, QAction, QMainWindow
+    QMenuBar, QMenu, QAction, QMainWindow, QStackedLayout, QGroupBox
 )
 from PyQt5.QtGui import QPainter, QBrush, QPen, QColor, QFont
 from PyQt5.QtCore import Qt, QTimer, QRectF, pyqtSignal, QRect
@@ -102,8 +102,7 @@ class Bullet:
 
 class Enemy:
     def __init__(self, level=1):
-        # Increase enemy speed with level (capped a bit)
-        speed_boost = min(level-1, 10)  # up to +10 speed
+        speed_boost = min(level-1, 10)
         self.type = random.choices(['normal','fast'], weights=[0.7,0.3])[0]
         side = random.choice(['left', 'right'])
         if self.type == 'normal':
@@ -192,6 +191,63 @@ class Turret:
         painter.drawRect(0, -3, 30, 6)
         painter.restore()
 
+# --- START SCREEN WIDGET ---
+class StartScreenWidget(QWidget):
+    modeSelected = pyqtSignal(str)
+    def __init__(self):
+        super().__init__()
+        self.setFixedSize(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.selected_mode = None
+        self.init_ui()
+    
+    def init_ui(self):
+        vbox = QVBoxLayout()
+        vbox.setAlignment(Qt.AlignCenter)
+        
+        title = QLabel("Turret Defense")
+        title.setFont(QFont("Arial", 40, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        vbox.addWidget(title)
+        
+        author = QLabel("Created by Keruki2004")
+        author.setFont(QFont("Arial", 18, QFont.Bold))
+        author.setAlignment(Qt.AlignCenter)
+        vbox.addWidget(author)
+        
+        vbox.addSpacing(40)
+        
+        menu_group = QGroupBox()
+        menu_layout = QVBoxLayout()
+        menu_layout.setAlignment(Qt.AlignCenter)
+        menu_label = QLabel("Select Game Mode:")
+        menu_label.setFont(QFont("Arial", 20, QFont.Bold))
+        menu_label.setAlignment(Qt.AlignCenter)
+        menu_layout.addWidget(menu_label)
+        
+        self.classic_btn = QPushButton("Classic")
+        self.classic_btn.setFont(QFont("Arial", 16))
+        self.classic_btn.clicked.connect(lambda: self.select_mode("Classic"))
+        menu_layout.addWidget(self.classic_btn)
+        
+        self.hardcore_btn = QPushButton("Hardcore")
+        self.hardcore_btn.setFont(QFont("Arial", 16))
+        self.hardcore_btn.clicked.connect(lambda: self.select_mode("Hardcore"))
+        menu_layout.addWidget(self.hardcore_btn)
+        
+        self.practice_btn = QPushButton("Practice")
+        self.practice_btn.setFont(QFont("Arial", 16))
+        self.practice_btn.clicked.connect(lambda: self.select_mode("Practice"))
+        menu_layout.addWidget(self.practice_btn)
+        
+        menu_group.setLayout(menu_layout)
+        vbox.addWidget(menu_group)
+        
+        self.setLayout(vbox)
+    
+    def select_mode(self, mode):
+        self.selected_mode = mode
+        self.modeSelected.emit(mode)
+
 class GameWidget(QWidget):
     scoreChanged = pyqtSignal(int)
     healthChanged = pyqtSignal(int)
@@ -201,8 +257,9 @@ class GameWidget(QWidget):
     levelChanged = pyqtSignal(int)
     levelUpSignal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, game_mode="Classic"):
         super().__init__()
+        self.game_mode = game_mode
         self.setFixedSize(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.setMouseTracking(True)
         self.pause = False
@@ -295,7 +352,6 @@ class GameWidget(QWidget):
             dy -= TURRET_MOVE_SPEED
         if self.arrow_keys['down']:
             dy += TURRET_MOVE_SPEED
-        # Clamp within screen bounds
         new_x = min(max(self.turret.x + dx, TURRET_WIDTH//2), SCREEN_WIDTH-TURRET_WIDTH//2)
         new_y = min(max(self.turret.y + dy, TURRET_HEIGHT//2), SCREEN_HEIGHT-TURRET_HEIGHT//2)
         self.turret.set_position(new_x, new_y)
@@ -334,13 +390,11 @@ class GameWidget(QWidget):
         self.hud_message_timer = duration
 
     def check_level_up(self):
-        # Level up if score passes threshold, up to MAX_LEVEL
         if self.level < MAX_LEVEL and self.score >= self.level * LEVEL_UP_SCORE:
             self.level += 1
             self.levelChanged.emit(self.level)
             self.levelUpSignal.emit(self.level)
             self.show_hud_message(f"Level {self.level}!", QColor(0,255,255), 80)
-            # Increase difficulty: decrease enemy spawn timer
             self.enemy_spawn_rate = max(INITIAL_ENEMY_SPAWN_RATE - ENEMY_SPAWN_ACCEL * (self.level-1), ENEMY_MIN_SPAWN_RATE)
             self.enemy_spawn_timer.stop()
             self.enemy_spawn_timer.start(self.enemy_spawn_rate)
@@ -352,16 +406,13 @@ class GameWidget(QWidget):
         self.try_move_turret()
         self.turret.update(self.mouse_x, self.mouse_y)
 
-        # Update Bullets
         for bullet in self.bullets:
             bullet.update()
-        # Combo system timer
         if self.combo_timer > 0:
             self.combo_timer -= 1
             if self.combo_timer == 0:
                 self.combo_count = 0
                 self.comboChanged.emit(self.combo_count)
-        # Rapid fire timer
         if self.rapid_fire:
             self.rapid_fire_timer -= 1
             if self.rapid_fire_space_held and self.rapid_fire_timer % 3 == 0:
@@ -369,13 +420,11 @@ class GameWidget(QWidget):
             if self.rapid_fire_timer <= 0:
                 self.rapid_fire = False
                 self.rapid_fire_space_held = False
-        # HUD message timer
         if self.hud_message_timer > 0:
             self.hud_message_timer -= 1
             if self.hud_message_timer == 0:
                 self.hud_message = ""
 
-        # Update Enemies and Check for Collisions
         for enemy in self.enemies:
             enemy.update()
             if is_collision(enemy.x, enemy.y, ENEMY_RADIUS, self.turret.x, self.turret.y, TURRET_HEIGHT / 2):
@@ -430,7 +479,6 @@ class GameWidget(QWidget):
         for powerup in self.powerups:
             powerup.draw(painter)
         self.draw_health_bar(painter)
-        # Draw Level in HUD
         painter.setPen(QColor(0,255,255))
         painter.setFont(QFont("Arial",18,QFont.Bold))
         painter.drawText(10, 48, f"Level: {self.level}")
@@ -473,7 +521,6 @@ class GameWidget(QWidget):
         painter.drawText(self.rect(), Qt.AlignBottom | Qt.AlignCenter, score_text)
         hs_text = f"High Score: {self.highscore}"
         painter.drawText(self.rect().adjusted(0,-50,0,-20), Qt.AlignBottom | Qt.AlignCenter, hs_text)
-        # Show Level reached
         painter.setFont(QFont("Arial", 20, QFont.Bold))
         painter.drawText(self.rect().adjusted(0,-100,0,-60), Qt.AlignBottom | Qt.AlignCenter, f"Level Reached: {self.level}")
 
@@ -483,11 +530,36 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Turret Defense")
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        self.init_ui()
+        self.stacked_layout = QStackedLayout()
+        self.central_widget.setLayout(self.stacked_layout)
+        self.start_screen = StartScreenWidget()
+        self.start_screen.modeSelected.connect(self.start_game)
+        self.stacked_layout.addWidget(self.start_screen)
+        self.game_widget = None
+        self.side_controls_widget = None
+        self.game_screen_widget = QWidget()
+        self.game_screen_layout = QHBoxLayout()
+        self.game_screen_widget.setLayout(self.game_screen_layout)
+        self.stacked_layout.addWidget(self.game_screen_widget)
         self.init_menubar()
 
-    def init_ui(self):
-        self.game_widget = GameWidget()
+    def init_game_screen(self, selected_mode):
+        if self.game_widget is not None:
+            self.game_widget.timer.stop()
+            self.game_widget.enemy_spawn_timer.stop()
+            self.game_widget.powerup_timer.stop()
+            self.game_screen_layout.removeWidget(self.game_widget)
+            self.game_widget.deleteLater()
+            self.game_widget = None
+        if self.side_controls_widget is not None:
+            self.game_screen_layout.removeWidget(self.side_controls_widget)
+            self.side_controls_widget.deleteLater()
+            self.side_controls_widget = None
+
+        self.game_widget = GameWidget(game_mode=selected_mode)
+        self.side_controls_widget = QWidget()
+        controls_layout = QVBoxLayout()
+        controls_layout.setAlignment(Qt.AlignTop)
         self.score_label = QLabel("Score: 0")
         self.health_label = QLabel(f"Health: {STARTING_HEALTH}/{MAX_HEALTH}")
         self.highscore_label = QLabel(f"High Score: {self.game_widget.highscore}")
@@ -500,7 +572,6 @@ class MainWindow(QMainWindow):
         self.highscore_label.setFont(font)
         self.combo_label.setFont(font)
         self.level_label.setFont(font)
-        controls_layout = QVBoxLayout()
         controls_layout.addWidget(self.score_label)
         controls_layout.addWidget(self.health_label)
         controls_layout.addWidget(self.highscore_label)
@@ -511,10 +582,9 @@ class MainWindow(QMainWindow):
         self.reset_button.clicked.connect(self.reset_game)
         self.reset_button.setEnabled(False)
         controls_layout.addWidget(self.reset_button)
-        main_layout = QHBoxLayout()
-        main_layout.addWidget(self.game_widget)
-        main_layout.addLayout(controls_layout)
-        self.central_widget.setLayout(main_layout)
+        self.side_controls_widget.setLayout(controls_layout)
+        self.game_screen_layout.addWidget(self.game_widget)
+        self.game_screen_layout.addWidget(self.side_controls_widget)
         self.game_widget.scoreChanged.connect(self.update_score_label)
         self.game_widget.healthChanged.connect(self.update_health_label)
         self.game_widget.gameOverSignal.connect(self.on_game_over)
@@ -523,26 +593,16 @@ class MainWindow(QMainWindow):
         self.game_widget.levelChanged.connect(self.update_level_label)
         self.game_widget.levelUpSignal.connect(self.on_level_up)
 
-    def init_menubar(self):
-        menubar = self.menuBar()
-        game_menu = menubar.addMenu("Game")
-        help_menu = menubar.addMenu("Help")
-        
-        reset_action = QAction("Reset Game", self)
-        reset_action.triggered.connect(self.reset_game)
-        game_menu.addAction(reset_action)
-        
-        exit_action = QAction("Exit", self)
-        exit_action.triggered.connect(self.close)
-        game_menu.addAction(exit_action)
+    def start_game(self, mode):
+        self.init_game_screen(mode)
+        self.stacked_layout.setCurrentWidget(self.game_screen_widget)
 
-        about_action = QAction("About", self)
-        about_action.triggered.connect(self.show_about_dialog)
-        help_menu.addAction(about_action)
-
-        controls_action = QAction("Controls", self)
-        controls_action.triggered.connect(self.show_controls_dialog)
-        help_menu.addAction(controls_action)
+    def reset_game(self):
+        cur_mode = getattr(self.game_widget, 'game_mode', 'Classic')
+        self.init_game_screen(cur_mode)
+        self.stacked_layout.setCurrentWidget(self.game_screen_widget)
+        self.reset_button.setEnabled(False)
+        self.update()
 
     def show_about_dialog(self):
         QMessageBox.information(self, "About Turret Defense",
@@ -571,34 +631,32 @@ class MainWindow(QMainWindow):
         self.level_label.setText(f"Level: {level}")
 
     def on_level_up(self, level):
-        # Optional: Play sound or animation
         pass
 
     def on_game_over(self):
         self.reset_button.setEnabled(True)
         QMessageBox.information(self, "Game Over", "Game Over! Click Reset to play again.")
 
-    def reset_game(self):
-        self.game_widget.timer.stop()
-        self.game_widget.enemy_spawn_timer.stop()
-        self.game_widget.powerup_timer.stop()
-        self.game_widget.deleteLater()
-        self.game_widget = GameWidget()
-        self.game_widget.scoreChanged.connect(self.update_score_label)
-        self.game_widget.healthChanged.connect(self.update_health_label)
-        self.game_widget.gameOverSignal.connect(self.on_game_over)
-        self.game_widget.highScoreChanged.connect(self.update_highscore_label)
-        self.game_widget.comboChanged.connect(self.update_combo_label)
-        self.game_widget.levelChanged.connect(self.update_level_label)
-        self.game_widget.levelUpSignal.connect(self.on_level_up)
-        # Replace the old widget in the layout
-        central_layout = self.central_widget.layout()
-        central_layout.replaceWidget(central_layout.itemAt(0).widget(), self.game_widget)
-        self.reset_button.setEnabled(False)
-        self.update()
+    def init_menubar(self):
+        menubar = self.menuBar()
+        game_menu = menubar.addMenu("Game")
+        help_menu = menubar.addMenu("Help")
+        reset_action = QAction("Reset Game", self)
+        reset_action.triggered.connect(self.reset_game)
+        game_menu.addAction(reset_action)
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.close)
+        game_menu.addAction(exit_action)
+        about_action = QAction("About", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+        controls_action = QAction("Controls", self)
+        controls_action.triggered.connect(self.show_controls_dialog)
+        help_menu.addAction(controls_action)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+    
