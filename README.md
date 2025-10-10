@@ -15,10 +15,14 @@ Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 
 # Changelog October 2025:
 
-|  -first release 
-| -added "Power-up"s 
-|-added free movement 
-|  -added level-system 
-| -added combo-system 
-|
+|   -first release 
+|   -added "Power-up"s 
+|   -added free movement 
+|   -added level-system 
+|   -added combo-system 
+|   -first release 
+||  -added gae menu 
+|   -added starting screen
+|   -added different difficulties
+
   
