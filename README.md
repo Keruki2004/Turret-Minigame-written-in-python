@@ -12,29 +12,9 @@ Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 | Changes |   -first build | -first release 
 | ...     |-added red dots | -added "Power-up"s 
 | ...     |-added bulllets | -added free movement 
-| ...     |-added turret and shooting method | added level-system
-| ...     | ...     | 
-| ...     | ...     | 
-| ...     | ...     |  
-| ...     | ...     |  
-| ...     | ...     | 
-| ...     | ...     |  
-| ...     | ...     | 
-| ...     | ...     |  
-
-
-
-
-# Changelog October 2025:
-
-|   
-|   
-|   
-|   - 
-|   -added combo-system 
-|   -first release 
-|   -added game menu 
-|   -added starting screen
-|   -added different difficulties
-
-  
+| ...     |-added turret and shooting method | -added level-system
+| ...     | ...     | -added combo-system 
+| ...     | ...     | -first release 
+| ...     | ...     | -added game menu 
+| ...     | ...     | -added starting screen
+| ...     | ...     | -added different difficulties
