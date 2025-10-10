@@ -5,12 +5,16 @@ It's just written from scratch, so don't expect high-end performance and hours o
 
 Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 
-# Changelog September 2025:
-|  -first build 
-|  -added red dots
-|  -added bulllets
-| -added turret and shooting method
-|
+# Changelog
+
+| Date/Time | September '25 | October'25 |
+| --- | --- | --- |
+| Changes |   -first build |
+| ... |-added red dots |
+| ...|-added bulllets |
+| ...|-added turret and shooting method |
+|         |  
+
 
 
 # Changelog October 2025:
@@ -21,7 +25,7 @@ Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 |   -added level-system 
 |   -added combo-system 
 |   -first release 
-||  -added gae menu 
+|   -added game menu 
 |   -added starting screen
 |   -added different difficulties
 
