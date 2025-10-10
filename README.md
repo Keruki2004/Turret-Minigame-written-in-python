@@ -13,8 +13,8 @@ Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 | ...     |-added red dots | -added "Power-up"s 
 | ...     |-added bulllets | -added free movement 
 | ...     |-added turret and shooting method | -added level-system
-| ...     | ...     | -added combo-system 
-| ...     | ...     | -first release 
-| ...     | ...     | -added game menu 
-| ...     | ...     | -added starting screen
-| ...     | ...     | -added different difficulties
+| ...     | ...            | -added combo-system 
+| ...     | ...            | -first release 
+| ...     | ...            | -added game menu 
+| ...     | ...            | -added starting screen
+| ...     | ...            | -added different difficulties
