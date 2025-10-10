@@ -9,20 +9,28 @@ Feel free to make pull-requests and to add a bunch of code. Thanks a lot :)
 
 | Date/Time | September '25 | October'25 |
 | --- | --- | --- |
-| Changes |   -first build |
-| ... |-added red dots |
-| ...|-added bulllets |
-| ...|-added turret and shooting method |
-|         |  
+| Changes |   -first build | -first release 
+| ...     |-added red dots | -added "Power-up"s 
+| ...     |-added bulllets | -added free movement 
+| ...     |-added turret and shooting method | added level-system
+| ...     | ...     | 
+| ...     | ...     | 
+| ...     | ...     |  
+| ...     | ...     |  
+| ...     | ...     | 
+| ...     | ...     |  
+| ...     | ...     | 
+| ...     | ...     |  
+
 
 
 
 # Changelog October 2025:
 
-|   -first release 
-|   -added "Power-up"s 
-|   -added free movement 
-|   -added level-system 
+|   
+|   
+|   
+|   - 
 |   -added combo-system 
 |   -first release 
 |   -added game menu 
